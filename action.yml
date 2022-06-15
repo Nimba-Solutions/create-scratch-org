@@ -1,0 +1,67 @@
+name: Create Scratch Org
+description: 'Execute a named CumulusCI flow to create a scratch org'
+inputs:
+  cumulusci-version:
+    description: 'version of CumulusCI to install'
+    required: true
+    default: '3.60.0'
+  sfdx-version:
+    description: 'version of SFDX to install'
+    required: true
+    default: '7.154.0'
+  dev-hub-auth-url:
+    description: 'SFDX auth URL for the Dev Hub'
+    required: true
+  org-name:
+    description: 'Name of the scratch org or persistent org config to use'
+    required: true
+  flow-name:
+    description: 'Name of the CumulusCI flow to execute'
+    required: true
+  commit-status-name:
+    description: 'Name of an extra commit status to set'
+    required: false
+    default: 
+runs:
+    using: "composite"
+    steps:
+      - name: Set Up CumulusCI
+        uses: cumulusci-actions/setup-cumulus@main
+        with:
+          cumulusci-version: ${{ inputs.cumulusci-version }}
+          sfdx-version: ${{ inputs.sfdx-version }}
+      - name: Authenticate to Dev Hub
+        run: |
+          echo '${{ inputs.dev-hub-auth-url }}' > sfdx_auth
+          sfdx force:auth:sfdxurl:store -f sfdx_auth -d
+          rm sfdx_auth
+        shell: bash
+      - name: Run Flow
+        uses: cumulusci-actions/run-flow@main
+        with:
+          org-name: ${{ inputs.org-name }}
+          flow-name: ${{ inputs.flow-name }}
+      - name: Output Login URL
+        run: |
+          LOGIN_URL=$(cci org browser -r ${{ inputs.org-name }})
+          echo "Log into ${{ inputs.org-name }} at $LOGIN_URL"
+        shell: bash
+      - name: Set Commit Status
+        if: ${{ inputs.commit-status-name }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          STATUS=$(cat cumulusci-flow.log | grep -o '${{ inputs.commit-status-regex }}')
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            /repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -f state='success' \
+            -f url="$LOGIN_URL" \
+            -f context='${{ inputs.commit-status-name }}'
+        shell: bash
+      - name: Delete Scratch Org
+        if: ${{ failure() }}
+        run: |
+          cci org scratch_delete ${{ inputs.org-name }}
+        shell: bash
