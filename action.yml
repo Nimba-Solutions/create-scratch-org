@@ -52,7 +52,6 @@ runs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          STATUS=$(cat cumulusci-flow.log | grep -o '${{ inputs.commit-status-regex }}')
           gh api \
             --method POST \
             -H "Accept: application/vnd.github.v3+json" \
