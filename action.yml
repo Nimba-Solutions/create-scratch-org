@@ -19,7 +19,7 @@ inputs:
     description: 'Name of the CumulusCI flow to execute'
     required: true
   commit-status-name:
-    description: 'Name of an extra commit status to set'
+    description: 'Name of an extra commit status to set with the URL to the org'
     required: false
     default: 
 runs:
@@ -32,11 +32,11 @@ runs:
           cumulusci-version: ${{ inputs.cumulusci-version }}
           sfdx-version: ${{ inputs.sfdx-version }}
       - name: Authenticate to Dev Hub
-        run: |
-          echo '${{ inputs.dev-hub-auth-url }}' > sfdx_auth
-          sfdx force:auth:sfdxurl:store -f sfdx_auth -d
-          rm sfdx_auth
-        shell: bash
+        uses: cumulusci-actions/authorize-org@main
+        with:
+          auth-url: '${{ inputs.dev-hub-auth-url }}'
+          org-name: dev-hub
+          dev-hub: true
       - name: Run Flow
         uses: cumulusci-actions/run-flow@main
         with:
