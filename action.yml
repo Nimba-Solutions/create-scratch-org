@@ -50,6 +50,7 @@ runs:
         env:
           GITHUB_TOKEN: '${{ github.token }}'
         run: |
+          LOGIN_URL=$(cci org browser -r '${{ inputs.org-name }}' | tail -n 1)
           gh api \
             --method POST \
             -H "Accept: application/vnd.github.v3+json" \
