@@ -55,7 +55,7 @@ runs:
             -H "Accept: application/vnd.github.v3+json" \
             /repos/${{ github.repository }}/statuses/${{ github.sha }} \
             -f state='success' \
-            -f url="$LOGIN_URL" \
+            -f target_url="$LOGIN_URL" \
             -f context='${{ inputs.commit-status-name }}'
         shell: bash
       - name: Delete Scratch Org on Failure
