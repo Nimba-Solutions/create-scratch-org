@@ -42,7 +42,7 @@ runs:
           flow-name: '${{ inputs.flow-name }}'
       - name: Output Login URL
         run: |
-          LOGIN_URL=$(cci org browser -r ${{ inputs.org-name }})
+          LOGIN_URL=$(cci org browser -r '${{ inputs.org-name }}' | tail -n 1)
           echo "Log into ${{ inputs.org-name }} at $LOGIN_URL"
         shell: bash
       - name: Set Commit Status
