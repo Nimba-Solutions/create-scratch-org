@@ -1,14 +1,12 @@
 name: Create Scratch Org
-description: 'Execute a named CumulusCI flow to create a scratch org'
+description: 'Execute a named Cumulus flow to create a scratch org'
 inputs:
   cumulusci-version:
     description: 'version of CumulusCI to install'
-    required: true
-    default: '3.60.0'
+    required: false
   sfdx-version:
     description: 'version of SFDX to install'
-    required: true
-    default: '7.154.0'
+    required: false
   dev-hub-auth-url:
     description: 'SFDX auth URL for the Dev Hub'
     required: true
@@ -16,41 +14,41 @@ inputs:
     description: 'Name of the scratch org or persistent org config to use'
     required: true
   flow-name:
-    description: 'Name of the CumulusCI flow to execute'
+    description: 'Name of the Cumulus flow to execute'
     required: true
   commit-status-name:
-    description: 'Name of an extra commit status to set with the URL to the org'
-    required: false
-    default: 
+    description: 'Name of an optional extra commit status to set from build results'
+    required: true
+    default: Scratch Org
 runs:
     using: "composite"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set Up CumulusCI
-        uses: cumulusci-actions/setup-cumulus@main
+        uses: cumulus-actions/setup-cumulus@v1
         with:
-          cumulusci-version: ${{ inputs.cumulusci-version }}
-          sfdx-version: ${{ inputs.sfdx-version }}
+          cumulusci-version: '${{ inputs.cumulusci-version }}'
+          sfdx-version: '${{ inputs.sfdx-version }}'
       - name: Authenticate to Dev Hub
-        uses: cumulusci-actions/authorize-org@main
+        uses: cumulus-actions/authorize-org@v1
         with:
           auth-url: '${{ inputs.dev-hub-auth-url }}'
           org-name: dev-hub
           dev-hub: true
       - name: Run Flow
-        uses: cumulusci-actions/run-flow@main
+        uses: cumulus-actions/run-flow@v1
         with:
-          org-name: ${{ inputs.org-name }}
-          flow-name: ${{ inputs.flow-name }}
+          org-name: '${{ inputs.org-name }}'
+          flow-name: '${{ inputs.flow-name }}'
       - name: Output Login URL
         run: |
           LOGIN_URL=$(cci org browser -r ${{ inputs.org-name }})
           echo "Log into ${{ inputs.org-name }} at $LOGIN_URL"
         shell: bash
       - name: Set Commit Status
-        if: ${{ inputs.commit-status-name }}
+        if: '${{ inputs.commit-status-name }}'
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: '${{ github.token }}'
         run: |
           gh api \
             --method POST \
@@ -60,8 +58,8 @@ runs:
             -f url="$LOGIN_URL" \
             -f context='${{ inputs.commit-status-name }}'
         shell: bash
-      - name: Delete Scratch Org
+      - name: Delete Scratch Org on Failure
         if: ${{ failure() }}
         run: |
-          cci org scratch_delete ${{ inputs.org-name }}
+          cci org scratch_delete '${{ inputs.org-name }}'
         shell: bash
